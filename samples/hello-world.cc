@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "libvkeys.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +15,18 @@
 #include "include/v8-primitive.h"
 #include "include/v8-script.h"
 
+__thread vkru_t *vkru;
+#define MAXVDOM 64
 int main(int argc, char* argv[]) {
+  int vkey_init_ret = vkey_init(false);
+  /*if(vkru == NULL) {
+    vkru = vkru_alloc(1);
+    printf("vkru_alloc in hello world!\n");
+  }
+  */
+  fprintf(stderr,"vkey init: %d\n",vkey_init_ret);  
+  fflush(stderr);
+  fprintf(stderr,"Current thread: %d\n",gettid());
   // Initialize V8.
   v8::V8::InitializeICUDefaultLocation(argv[0]);
   v8::V8::InitializeExternalStartupData(argv[0]);
@@ -38,7 +50,7 @@ int main(int argc, char* argv[]) {
 
     // Enter the context for compiling and running the hello world script.
     v8::Context::Scope context_scope(context);
-
+    /* 
     {
       // Create a string containing the JavaScript source code.
       v8::Local<v8::String> source =
@@ -55,7 +67,7 @@ int main(int argc, char* argv[]) {
       v8::String::Utf8Value utf8(isolate, result);
       printf("%s\n", *utf8);
     }
-
+    */
     {
       // Use the JavaScript API to generate a WebAssembly module.
       //
@@ -81,11 +93,9 @@ int main(int argc, char* argv[]) {
       // Create a string containing the JavaScript source code.
       v8::Local<v8::String> source =
           v8::String::NewFromUtf8Literal(isolate, csource);
-
       // Compile the source code.
       v8::Local<v8::Script> script =
           v8::Script::Compile(context, source).ToLocalChecked();
-
       // Run the script to get the result.
       v8::Local<v8::Value> result = script->Run(context).ToLocalChecked();
 

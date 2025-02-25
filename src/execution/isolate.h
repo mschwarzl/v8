@@ -592,11 +592,12 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
   // and reused on subsequent entries.
   class PerIsolateThreadData {
    public:
-    PerIsolateThreadData(Isolate* isolate, ThreadId thread_id)
+    PerIsolateThreadData(Isolate* isolate, ThreadId thread_id, int vkey)
         : isolate_(isolate),
           thread_id_(thread_id),
           stack_limit_(0),
-          thread_state_(nullptr)
+          thread_state_(nullptr),
+	  vkey_(vkey)
 #if USE_SIMULATOR
           ,
           simulator_(nullptr)
@@ -608,6 +609,7 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
     PerIsolateThreadData& operator=(const PerIsolateThreadData&) = delete;
     Isolate* isolate() const { return isolate_; }
     ThreadId thread_id() const { return thread_id_; }
+    int vkey() const { return vkey_;}
 
     FIELD_ACCESSOR(uintptr_t, stack_limit)
     FIELD_ACCESSOR(ThreadState*, thread_state)
@@ -624,6 +626,7 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
     ThreadId thread_id_;
     uintptr_t stack_limit_;
     ThreadState* thread_state_;
+    int vkey_;
 
 #if USE_SIMULATOR
     Simulator* simulator_;

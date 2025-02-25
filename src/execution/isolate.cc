@@ -124,6 +124,9 @@
 #include "src/strings/string-stream.h"
 #include "src/tasks/cancelable-task.h"
 
+#include "src/base/platform/libvkeys/libvkeys.h"
+
+
 #if defined(V8_USE_PERFETTO)
 #include "src/tracing/perfetto-logger.h"
 #endif  // defined(V8_USE_PERFETTO)
@@ -531,6 +534,7 @@ namespace {
 std::atomic<int> isolate_counter{0};
 }  // namespace
 
+__thread vkru_t *vkru = nullptr;
 Isolate::PerIsolateThreadData*
 Isolate::FindOrAllocatePerThreadDataForThisThread() {
   ThreadId thread_id = ThreadId::Current();
@@ -542,7 +546,41 @@ Isolate::FindOrAllocatePerThreadDataForThisThread() {
       if (v8_flags.adjust_os_scheduling_parameters) {
         base::OS::AdjustSchedulingParams();
       }
-      per_thread = new PerIsolateThreadData(this, thread_id);
+      //MARTIN Start
+      int vkey = -1;
+      if(vkey_ready()) {
+	if(vkru == nullptr) {
+	  vkru = vkru_alloc(1);
+          fprintf(stderr,"vkru_alloc: %p\n",vkru);
+	}
+	if (!vkru) {
+          fprintf(stderr,"VKRU Alloc failed");
+  	  fflush(stderr);
+	} else {
+	  vkey = vkey_alloc();
+    	  fprintf(stderr,"isolate.cc: VKEY-Alloc %d\n",vkey);
+   	  if(vkey > 0) {
+	    wrvkru(vkey, VKEY_ND);
+	  }
+	}
+      }
+      // Approach 2 Pkey
+      /*int pkey = pkey_alloc(0, PKEY_DISABLE_ACCESS);
+      if(pkey == -1) {
+        fprintf(stderr,"Could not allocate pkey\n");
+      }
+      int status = pkey_set(pkey,0);
+      if(status) {
+        fprintf(stderr,"pkey_set failed\n");
+      }
+      status = pkey_set(pkey, PKEY_DISABLE_ACCESS);
+      if(status) {
+        fprintf(stderr,"pkey_set2 failed\n");
+      }
+      */
+      per_thread = new PerIsolateThreadData(this, thread_id,vkey);
+      //per_thread = new PerIsolateThreadData(this, thread_id,pkey);
+      //per_thread = new PerIsolateThreadData(this, thread_id);
       thread_data_table_.Insert(per_thread);
     }
     DCHECK(thread_data_table_.Lookup(thread_id) == per_thread);

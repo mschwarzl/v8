@@ -7138,6 +7138,25 @@ if (v8_check_header_includes) {
 # Produce a single static library for embedders
 #
 
+shared_library("libvkeyss") {
+  sources = [
+    "src/base/platform/libvkeys/libvkeys.c",
+    "src/base/platform/libvkeys/libvkeys.h",
+  ]
+  include_dirs = [ "src/base/platform/libvkeys" ]
+
+  cflags = [
+    "-g",
+    "-fPIC",
+    "-O3",
+    "-Wno-implicit-function-declaration",
+    "-fno-stack-protector",
+    "-fvisibility=default",
+    "-DVKEY_SAFE",
+  ]
+  asmflags = [ "-fvisibility=default" ]
+}
+
 if (v8_monolithic) {
   assert(!is_component_build,
          "Set `is_component_build = false` for v8_monolithic.")
@@ -7252,6 +7271,7 @@ if (current_toolchain == v8_snapshot_toolchain) {
       ":v8_maybe_icu",
       ":v8_shared_internal_headers",
       ":v8_tracing",
+      ":libvkeyss",
       "//build/win:default_exe_manifest",
     ]
   }
@@ -7699,6 +7719,7 @@ v8_executable("v8_hello_world") {
     ":v8",
     ":v8_libbase",
     ":v8_libplatform",
+    ":libvkeyss",
     "//build/win:default_exe_manifest",
   ]
 
@@ -7746,6 +7767,7 @@ if (want_v8_shell) {
       ":v8",
       ":v8_libbase",
       ":v8_libplatform",
+      ":libvkeyss",
       "//build/win:default_exe_manifest",
     ]
     if (current_os == "zos" && is_component_build) {

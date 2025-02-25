@@ -22,6 +22,7 @@
 #include "src/logging/log.h"
 #include "src/sandbox/hardware-support.h"
 #include "src/utils/allocation.h"
+#include "src/base/platform/libvkeys/libvkeys.h"
 
 namespace v8 {
 namespace internal {
@@ -164,8 +165,29 @@ Address MemoryAllocator::AllocateAlignedMemory(
 
   if (executable == EXECUTABLE) {
     ThreadIsolation::RegisterJitPage(base, chunk_size);
-  }
+  } else {
+    //MARTIN
+    // we don't want to protect JIT pages for now
+    fprintf(stderr,"Isolate: %p, CurrentPerIsolateThreadData %p\n",isolate_,isolate_->FindOrAllocatePerThreadDataForThisThread());
+    int vkey = isolate_->CurrentPerIsolateThreadData()->vkey();
+    
+    /*int status = pkey_set(vkey,0);
+    if(status) {
+      fprintf(stderr,"pkey_set");
+      return EXIT_FAILURE;
+    }*/
 
+    fprintf(stderr,"---------------\nvkey is %d\n",vkey);
+    fflush(stderr);
+    if(vkey != -1) {
+      fprintf(stderr,"Protecting memory region: 0x%zx-0x%zx with vkey %d\n",(size_t)reservation.address(),(size_t)((size_t)reservation.address()+chunk_size),vkey);
+      //pkey_mprotect(reinterpret_cast<void*>(base), chunk_size, PROT_READ|PROT_WRITE,vkey);
+      vkey_mprotect(reinterpret_cast<void*>(base), chunk_size, vkey);
+      wrvkru(vkey, VKEY_ND);
+      fprintf(stderr,"Tid: %d\n-------------\n",gettid());
+      fflush(stderr);
+    }
+  }
   UpdateAllocatedSpaceLimits(base, base + chunk_size, executable);
 
   *controller = std::move(reservation);
